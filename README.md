@@ -29,7 +29,7 @@ EOF
 cat > docker-compose.yml << 'EOF'
 services:
   chat2api:
-    image: mrlees2026/chat2api:latest
+    image: wsng911/chat2api:latest
     container_name: chat2api
     restart: unless-stopped
     volumes:
