@@ -52,7 +52,7 @@ export type ImageConversationStats = {
 };
 
 const imageConversationStorage = localforage.createInstance({
-  name: "chatgpt2api",
+  name: "chat2api",
   storeName: "image_conversations",
 });
 

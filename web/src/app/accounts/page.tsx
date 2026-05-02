@@ -188,7 +188,7 @@ function AccountsPageContent() {
   const [typeFilter, setTypeFilter] = useState<AccountType | "all">("all");
   const [statusFilter, setStatusFilter] = useState<AccountStatus | "all">("all");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState("10");
+  const [pageSize, setPageSize] = useState("20");
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editType, setEditType] = useState<AccountType>("Free");
   const [editStatus, setEditStatus] = useState<AccountStatus>("正常");
@@ -366,10 +366,7 @@ function AccountsPageContent() {
     <>
       <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-1">
-          <div className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
-            Account Pool
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight">号池管理</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Token 管理</h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -791,10 +788,10 @@ function AccountsPageContent() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="10">10 / 页</SelectItem>
                     <SelectItem value="20">20 / 页</SelectItem>
                     <SelectItem value="50">50 / 页</SelectItem>
                     <SelectItem value="100">100 / 页</SelectItem>
+                    <SelectItem value="1000">1000 / 页</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button

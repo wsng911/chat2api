@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Github } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 import webConfig from "@/constants/common-env";
@@ -11,11 +10,7 @@ import { cn } from "@/lib/utils";
 
 const adminNavItems = [
   { href: "/image", label: "画图" },
-  { href: "/accounts", label: "号池管理" },
-  { href: "/register", label: "注册机" },
-  { href: "/image-manager", label: "图片管理" },
-  { href: "/logs", label: "日志管理" },
-  { href: "/settings", label: "设置" },
+  { href: "/accounts", label: "Token 管理" },
 ];
 
 const userNavItems = [{ href: "/image", label: "画图" }];
@@ -70,18 +65,8 @@ export function TopNav() {
             href="/image"
             className="shrink-0 py-1 text-[15px] font-bold tracking-tight text-stone-950 transition hover:text-stone-700"
           >
-            chatgpt2api
+            chat2api
           </Link>
-          <a
-            href="https://github.com/basketikun/chatgpt2api"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 py-1 text-sm text-stone-400 transition hover:text-stone-700"
-            aria-label="GitHub repository"
-          >
-            <Github className="size-4" />
-            <span className="hidden md:inline">GitHub</span>
-          </a>
           <button
             type="button"
             className="ml-auto shrink-0 py-1 text-xs text-stone-400 transition hover:text-stone-700 sm:hidden"
@@ -113,9 +98,6 @@ export function TopNav() {
         <div className="hidden items-center justify-end gap-2 sm:flex sm:gap-3">
           <span className="hidden rounded-md bg-stone-100 px-2 py-1 text-[10px] font-medium text-stone-500 sm:inline-block sm:text-[11px]">
             {roleLabel}
-          </span>
-          <span className="hidden rounded-md bg-stone-100 px-2 py-1 text-[10px] font-medium text-stone-500 sm:inline-block sm:text-[11px]">
-            v{webConfig.appVersion}
           </span>
           <button
             type="button"

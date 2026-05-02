@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ImageComposer } from "@/app/image/components/image-composer";
 import { ImageResults, type ImageLightboxItem } from "@/app/image/components/image-results";
 import { ImageSidebar } from "@/app/image/components/image-sidebar";
+import { MaskEditor } from "@/app/image/components/mask-editor";
 import { ImageLightbox } from "@/components/image-lightbox";
 import {
   Dialog,
@@ -41,9 +42,9 @@ import {
   type StoredReferenceImage,
 } from "@/store/image-conversations";
 
-const ACTIVE_CONVERSATION_STORAGE_KEY = "chatgpt2api:image_active_conversation_id";
-const IMAGE_SIZE_STORAGE_KEY = "chatgpt2api:image_last_size";
-const IMAGE_COUNT_STORAGE_KEY = "chatgpt2api:image_last_count";
+const ACTIVE_CONVERSATION_STORAGE_KEY = "chat2api:image_active_conversation_id";
+const IMAGE_SIZE_STORAGE_KEY = "chat2api:image_last_size";
+const IMAGE_COUNT_STORAGE_KEY = "chat2api:image_last_count";
 
 function clampImageCount(value: string) {
   return String(Math.min(100, Math.max(1, Math.floor(Number(value) || 1))));
@@ -355,6 +356,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "one"; id: string } | { type: "all" } | null>(null);
+  const [maskEditor, setMaskEditor] = useState<{ conversationId: string; imageDataUrl: string; originalImage: StoredImage | StoredReferenceImage } | null>(null);
 
   const parsedCount = useMemo(() => Number(clampImageCount(imageCount)), [imageCount]);
   const selectedConversation = useMemo(
@@ -656,30 +658,64 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
   const handleContinueEdit = useCallback(
     async (conversationId: string, image: StoredImage | StoredReferenceImage) => {
       try {
-        const nextReference =
-          "dataUrl" in image
-            ? {
-                referenceImage: image,
-                file: dataUrlToFile(image.dataUrl, image.name, image.type),
-              }
-            : await buildReferenceImageFromStoredImage(image, `conversation-${conversationId}-${Date.now()}.png`);
-        if (!nextReference) {
+        // 获取图片 dataUrl
+        let dataUrl: string;
+        if ("dataUrl" in image) {
+          dataUrl = image.dataUrl;
+        } else if (image.b64_json) {
+          dataUrl = `data:image/png;base64,${image.b64_json}`;
+        } else if (image.url) {
+          const response = await fetch(image.url);
+          const blob = await response.blob();
+          dataUrl = await readFileAsDataUrl(new File([blob], "image.png", { type: blob.type }));
+        } else {
+          toast.error("无法读取图片");
           return;
         }
-
-        setSelectedConversationId(conversationId);
-
-        setReferenceImages((prev) => [...prev, nextReference.referenceImage]);
-        setReferenceImageFiles((prev) => [...prev, nextReference.file]);
-        setImagePrompt("");
-        textareaRef.current?.focus();
-        toast.success("已加入当前参考图，继续输入描述即可编辑");
+        // 打开 MaskEditor
+        setMaskEditor({ conversationId, imageDataUrl: dataUrl, originalImage: image });
       } catch (error) {
         const message = error instanceof Error ? error.message : "读取结果图失败";
         toast.error(message);
       }
     },
     [],
+  );
+
+  const handleMaskConfirm = useCallback(
+    async (maskDataUrl: string) => {
+      if (!maskEditor) return;
+      const { conversationId, imageDataUrl, originalImage } = maskEditor;
+      setMaskEditor(null);
+
+      try {
+        // 把原图和 mask 都加入参考图
+        const originalFile = dataUrlToFile(imageDataUrl, "original.png", "image/png");
+        const maskFile = dataUrlToFile(maskDataUrl, "mask.png", "image/png");
+
+        const originalRef: StoredReferenceImage = {
+          name: "original.png",
+          type: "image/png",
+          dataUrl: imageDataUrl,
+        };
+        const maskRef: StoredReferenceImage = {
+          name: "mask.png",
+          type: "image/png",
+          dataUrl: maskDataUrl,
+        };
+
+        setSelectedConversationId(conversationId);
+        setReferenceImages([originalRef, maskRef]);
+        setReferenceImageFiles([originalFile, maskFile]);
+        setImagePrompt("");
+        textareaRef.current?.focus();
+        toast.success("已加载图片和选区，输入描述后提交");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "处理选区失败";
+        toast.error(message);
+      }
+    },
+    [maskEditor],
   );
 
   const openLightbox = useCallback((images: ImageLightboxItem[], index: number) => {
@@ -1010,12 +1046,22 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
             ref={resultsViewportRef}
             className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-1 py-2 sm:px-4 sm:py-4"
           >
-            <ImageResults
-              selectedConversation={selectedConversation}
-              onOpenLightbox={openLightbox}
-              onContinueEdit={handleContinueEdit}
-              formatConversationTime={formatConversationTime}
-            />
+            {maskEditor ? (
+              <div className="px-2 py-2">
+                <MaskEditor
+                  imageDataUrl={maskEditor.imageDataUrl}
+                  onConfirm={(maskDataUrl) => void handleMaskConfirm(maskDataUrl)}
+                  onCancel={() => setMaskEditor(null)}
+                />
+              </div>
+            ) : (
+              <ImageResults
+                selectedConversation={selectedConversation}
+                onOpenLightbox={openLightbox}
+                onContinueEdit={handleContinueEdit}
+                formatConversationTime={formatConversationTime}
+              />
+            )}
           </div>
 
           <ImageComposer
